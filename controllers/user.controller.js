@@ -8,14 +8,14 @@ const jwt = require("jsonwebtoken")
 const getAllUsers = async (req, res) => {
     // Open DB
     DB.connect()
-   
+
     await User.find()
-    .then((response)=>{
-        res.status(200).send({"results": response})
-    })
-    .catch((res)=>{
-        res.send({"error": error})
-    })
+        .then((response) => {
+            res.status(200).send({ "results": response })
+        })
+        .catch((res) => {
+            res.send({ "error": error })
+        })
 
     // Close DB
     DB.disconnect()
@@ -27,30 +27,30 @@ const login = async (req, res) => {
     DB.connect()
 
     // Validate user
-    await User.findOne({"email": req.body.email})
-    .then( async (response)=>{
-        // Compare clave with hash
-        await bcrypt.compare(req.body.clave.trim(), response.clave)
-        .then((status)=>{
-            // if status is true, generate token
+    await User.findOne({ "email": req.body.email })
+        .then(async (response) => {
+            // Compare clave with hash
+            await bcrypt.compare(req.body.clave.trim(), response.clave)
+                .then((status) => {
+                    // if status is true, generate token
 
-            if(status){    
-                jwt.sign({"email":req.body.email}, response.clave, 
-                (error, token) =>{
-                    console.log("SESSION****************", req.session)
-                    // Send a cookie
-                    res.cookie("token", token)
-                    res.status(200).send({"token": token})
+                    if (status) {
+                        jwt.sign({ "email": req.body.email }, response.clave,
+                            (error, token) => {
+                                console.log("SESSION****************", req.session)
+                                // Send a cookie
+                                res.cookie("token", token)
+                                res.status(200).send({ "token": token })
+                            })
+                    }
                 })
-            }
+                .catch((error) => {
+                    console.log("Incorrect user", error)
+                })
         })
-        .catch((error)=>{
-            console.log("Incorrect user", error)
+        .catch((error) => {
+            console.log("Error", error)
         })
-    })
-    .catch((error)=>{
-        console.log("Error", error)
-    })
 
     DB.disconnect()
 }
@@ -61,28 +61,29 @@ const find = (req, res, next) => {
     DB.connect()
 
     //Buscar si la cedula del usuario ya existe 
-    User.findOne({cedula: req.body.cedula})
-    .then((response) => {
-        console.log("user ", response)
-        // If response is not nul, the user already exists
-        if(response !== null) {
-            return res.status(500).send({"error": "User alredy exists"})
-        }
-        // Can be user
-        else {
-            next()
-        }
-    })
-    .catch((error) => {
-        res.send({"error":error.message})
-        // Close DB
-        DB.disconnect()
-    })
+    User.findOne({ cedula: req.body.cedula })
+
+        .then((response) => {
+            console.log("********************user********************** ", response)
+            // If response is not nul, the user already exists
+            if (response !== null) {
+                return res.status(500).send({ "error": "User alredy exists" })
+            }
+            // Can be user
+            else {
+                next()
+            }
+        })
+        .catch((error) => {
+            res.send({ "error": error.message })
+            // Close DB
+            DB.disconnect()
+        })
 }
 
 // generate hash to user key
 const generateHash = async (req, res, next) => {
-    await bcrypt.hash(req.body.clave, 10).then((hash)=>{
+    await bcrypt.hash(req.body.clave, 10).then((hash) => {
         req.body.clave = hash
         next()
     })
@@ -93,14 +94,14 @@ const createUser = async (req, res) => {
     // Create user when not exists
     let newUser = new User(req.body)
     await newUser.save()
-    .then((response) => {
-        // send response in JSON format
-        res.status(201).send({"mensaje": "Usuario creado correctamente", "status": 201})
-    })
-    .catch((error) => {
-        // send response in JSON format
-        res.status(404).send({"error": error.message, "status":404})
-    })
+        .then((response) => {
+            // send response in JSON format
+            res.status(201).send({ "mensaje": "Usuario creado correctamente", "status": 201 })
+        })
+        .catch((error) => {
+            // send response in JSON format
+            res.status(404).send({ "error": error.message, "status": 404 })
+        })
 
     DB.disconnect()
 }
@@ -111,20 +112,20 @@ const deleteUser = async (req, res) => {
     DB.connect()
 
     await User.findById(req.params._id)
-    .then(async (userFound) => {
-        // Delete user
-        await userFound.remove()
-        .then((userDeleted)=>{
-            // The user has beed delete
-            res.status(200).send({"message":"User deleted", "user":userDeleted})
+        .then(async (userFound) => {
+            // Delete user
+            await userFound.remove()
+                .then((userDeleted) => {
+                    // The user has beed delete
+                    res.status(200).send({ "message": "User deleted", "user": userDeleted })
+                })
+                .catch((error) => {
+                    res.send({ "error": error.message })
+                })
         })
-        .catch((error)=>{
-            res.send({"error": error.message})
+        .catch((error) => {
+            res.send({ "error": "User not exists" })
         })
-    })
-    .catch((error)=>{
-        res.send({"error":"User not exists"})
-    })
 
     // close DB
     DB.disconnect()
@@ -137,25 +138,25 @@ const updateUser = async (req, res) => {
     DB.connect()
 
     await User.findById(req.params._id)
-    .then(async (userFound)=>{
-        // Way 1
-        //User.update(userFound, req.body)
-        // Way 2
-        //userFound.update(req.body)
-        //WAY 3
-        let userToSave = Object.assign(userFound, req.body)
-        await userToSave.save()
+        .then(async (userFound) => {
+            // Way 1
+            //User.update(userFound, req.body)
+            // Way 2
+            //userFound.update(req.body)
+            //WAY 3
+            let userToSave = Object.assign(userFound, req.body)
+            await userToSave.save()
 
-        .then(()=>{
-            res.send("Udated")
+                .then(() => {
+                    res.send("Udated")
+                })
+                .catch(() => {
+                    res.send("No")
+                })
         })
-        .catch(()=>{
-            res.send("No")
+        .catch(() => {
+            res.send("error")
         })
-    })
-    .catch(()=>{
-        res.send("error")
-    })
 }
 
 module.exports = {
